@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalPro Webhook Schema",
+  "description": "Schéma des alertes TradingView pour SignalPro v1.0.0",
+  "version": "1.0.0",
+  "repository": "https://github.com/Zelprog/SignalPro-TV",
+  "type": "object",
+  "required": [
+    "v",
+    "signal_id", 
+    "ts",
+    "symbol",
+    "side",
+    "price"
+  ],
+  "properties": {
+    "v": {
+      "type": "string",
+      "description": "Version du schéma (SemVer)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "example": "1.0.0"
+    },
+    "signal_id": {
+      "type": "string", 
+      "description": "Identifiant unique du signal (UUID recommandé)",
+      "minLength": 8,
+      "maxLength": 64,
+      "example": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "ts": {
+      "type": "integer",
+      "description": "Timestamp Unix en millisecondes",
+      "minimum": 1000000000000,
+      "example": 1692364800000
+    },
+    "symbol": {
+      "type": "string",
+      "description": "Symbole tradé (format TradingView)",
+      "pattern": "^[A-Z0-9]+$",
+      "minLength": 3,
+      "maxLength": 20,
+      "example": "BTCUSDT"
+    },
+    "side": {
+      "type": "string",
+      "description": "Direction du signal",
+      "enum": ["BUY", "SELL", "FLAT"],
+      "example": "BUY"
+    },
+    "price": {
+      "type": "number",
+      "description": "Prix d'entrée du signal",
+      "minimum": 0,
+      "exclusiveMinimum": true,
+      "example": 45250.75
+    },
+    "sl": {
+      "type": "number",
+      "description": "Prix de stop loss (0 si aucun)",
+      "minimum": 0,
+      "default": 0,
+      "example": 44000.0
+    },
+    "tp": {
+      "type": "array",
+      "description": "Liste des take profits (ordre croissant pour LONG)",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMinimum": true
+      },
+      "maxItems": 5,
+      "default": [],
+      "example": [46500.0, 48000.0]
+    },
+    "trail_atr_k": {
+      "type": "number", 
+      "description": "Multiplicateur ATR pour trailing stop",
+      "minimum": 0,
+      "maximum": 10,
+      "default": 2.0,
+      "example": 2.0
+    },
+    "timeframe": {
+      "type": "string",
+      "description": "Timeframe du signal (format TradingView)",
+      "pattern": "^\\d+[mhDWM]$",
+      "example": "15m"
+    },
+    "note": {
+      "type": "string",
+      "description": "Note descriptive du signal",
+      "maxLength": 100,
+      "default": "",
+      "example": "DonchianBreakout+ATR"
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Score de confiance 0-100 (optionnel)",
+      "minimum": 0,
+      "maximum": 100,
+      "example": 85.5
+    },
+    "risk_r": {
+      "type": "number",
+      "description": "Risque en multiples R (optionnel)",
+      "minimum": 0,
+      "maximum": 10,
+      "example": 1.0
+    }
+  },
+  "additionalProperties": false,
+  
+  "examples": [
+    {
+      "v": "1.0.0",
+      "signal_id": "550e8400-e29b-41d4-a716-446655440000",
+      "ts": 1692364800000,
+      "symbol": "BTCUSDT",
+      "side": "BUY", 
+      "price": 45250.75,
+      "sl": 44000.0,
+      "tp": [46500.0, 48000.0],
+      "trail_atr_k": 2.0,
+      "timeframe": "15m",
+      "note": "DonchianBreakout+ATR",
+      "confidence": 85.5,
+      "risk_r": 1.0
+    },
+    {
+      "v": "1.0.0", 
+      "signal_id": "abc123def456",
+      "ts": 1692364860000,
+      "symbol": "ETHUSDT",
+      "side": "SELL",
+      "price": 2850.25,
+      "sl": 2950.0,
+      "tp": [2750.0],
+      "trail_atr_k": 1.5,
+      "timeframe": "1h", 
+      "note": "PullbackReversion"
+    },
+    {
+      "v": "1.0.0",
+      "signal_id": "flat-signal-001",
+      "ts": 1692364920000, 
+      "symbol": "BTCUSDT",
+      "side": "FLAT",
+      "price": 45100.0,
+      "sl": 0,
+      "tp": [],
+      "timeframe": "4h",
+      "note": "RegimeChange"
+    }
+  ],
+
+  "definitions": {
+    "changelog": {
+      "1.0.0": {
+        "date": "2025-08-17",
+        "changes": [
+          "Schéma initial",
+          "Champs obligatoires : v, signal_id, ts, symbol, side, price",
+          "Champs optionnels : sl, tp, trail_atr_k, timeframe, note, confidence, risk_r",
+          "Support BUY/SELL/FLAT",
+          "Validation format symbole et timeframe",
+          "Repository GitHub ajouté"
+        ]
+      }
+    },
+    "migration_notes": {
+      "from_future_versions": "Les changements de schéma majeurs nécessiteront une mise à jour du parser côté bot"
+    },
+    "usage": {
+      "description": "Ce schéma définit le format des alertes TradingView pour automation future",
+      "implementation": "Voir documentation complète sur https://github.com/Zelprog/SignalPro-TV",
+      "compatibility": "Compatible TradingView webhook + Binance API (v2.0.0)"
+    }
+  }
+}

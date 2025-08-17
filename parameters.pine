@@ -1,0 +1,76 @@
+// ============================================================================
+// PARAMÈTRES INDICATEUR - SignalPro v1.0.0
+// Valeurs par défaut testées et sûres pour crypto spot
+// Repository: https://github.com/Zelprog/SignalPro-TV
+// ============================================================================
+
+// === FILTRE DE RÉGIME ===
+ema200_len = input.int(200, "EMA200 Length", minval=50, maxval=500, group="🎯 Filtre Régime")
+st_len = input.int(10, "Supertrend ATR Length", minval=5, maxval=20, group="🎯 Filtre Régime") 
+st_mult = input.float(3.0, "Supertrend Multiplier", minval=1.0, maxval=10.0, step=0.1, group="🎯 Filtre Régime")
+use_adx_filter = input.bool(true, "Utiliser filtre ADX", group="🎯 Filtre Régime")
+adx_len = input.int(14, "ADX Length", minval=10, maxval=30, group="🎯 Filtre Régime")
+adx_threshold = input.float(25.0, "ADX Seuil minimum", minval=15.0, maxval=40.0, step=1.0, group="🎯 Filtre Régime")
+
+// === ENTRÉES SIGNAUX ===
+// Breakout Donchian
+enable_breakout = input.bool(true, "Activer Breakout Donchian", group="📈 Entrées")
+donchian_len = input.int(20, "Donchian Channel Length", minval=10, maxval=50, group="📈 Entrées")
+atr_filter_len = input.int(14, "ATR Filter Length", minval=10, maxval=30, group="📈 Entrées")
+atr_percentile = input.float(60.0, "ATR Percentile minimum (%)", minval=40.0, maxval=80.0, step=5.0, group="📈 Entrées")
+
+// Pullback EMA + RSI  
+enable_pullback = input.bool(true, "Activer Pullback", group="📈 Entrées")
+ema20_len = input.int(20, "EMA Pullback Length", minval=10, maxval=50, group="📈 Entrées")
+rsi_len = input.int(14, "RSI Length", minval=10, maxval=21, group="📈 Entrées")
+rsi_oversold = input.float(40.0, "RSI Seuil survente", minval=20.0, maxval=50.0, step=5.0, group="📈 Entrées")
+rsi_overbought = input.float(60.0, "RSI Seuil surachat", minval=50.0, maxval=80.0, step=5.0, group="📈 Entrées")
+
+// === GESTION RISQUE ===
+atr_sl_len = input.int(14, "ATR Stop Loss Length", minval=10, maxval=30, group="🛡️ Gestion Risque")
+atr_sl_mult = input.float(2.0, "ATR Stop Loss Multiplier", minval=1.0, maxval=5.0, step=0.1, group="🛡️ Gestion Risque")
+tp_r_mult1 = input.float(1.5, "Take Profit 1 (R multiple)", minval=0.5, maxval=5.0, step=0.1, group="🛡️ Gestion Risque")
+tp_r_mult2 = input.float(3.0, "Take Profit 2 (R multiple)", minval=1.0, maxval=10.0, step=0.5, group="🛡️ Gestion Risque")
+enable_trailing = input.bool(true, "Activer Trailing Stop", group="🛡️ Gestion Risque")
+trail_activate_r = input.float(1.0, "Trailing activation (R)", minval=0.5, maxval=3.0, step=0.1, group="🛡️ Gestion Risque")
+trail_atr_mult = input.float(1.5, "Trailing ATR Multiplier", minval=0.5, maxval=3.0, step=0.1, group="🛡️ Gestion Risque")
+
+// === BACKTEST ===
+enable_backtest = input.bool(true, "Activer Backtest", group="📊 Backtest")
+fee_rate = input.float(0.1, "Fee Rate (%)", minval=0.0, maxval=1.0, step=0.01, group="📊 Backtest")
+slippage_bp = input.float(2.0, "Slippage (basis points)", minval=0.0, maxval=10.0, step=0.5, group="📊 Backtest")
+initial_capital = input.float(10000.0, "Capital Initial", minval=1000.0, maxval=1000000.0, step=1000.0, group="📊 Backtest")
+risk_per_trade = input.float(2.0, "Risque par trade (%)", minval=0.5, maxval=10.0, step=0.1, group="📊 Backtest")
+
+// === ALERTES ===
+enable_alerts = input.bool(true, "Activer Alertes", group="🔔 Alertes")
+alert_frequency = input.string("once_per_bar_close", "Fréquence alertes", 
+     options=["once_per_bar", "once_per_bar_close", "all"], group="🔔 Alertes")
+
+// === AFFICHAGE ===
+show_levels = input.bool(true, "Afficher niveaux SL/TP", group="👁️ Affichage")
+show_stats_table = input.bool(true, "Afficher table stats", group="👁️ Affichage")
+table_position = input.string("top_right", "Position table", 
+     options=["top_left", "top_center", "top_right", "middle_left", "middle_center", "middle_right", "bottom_left", "bottom_center", "bottom_right"], group="👁️ Affichage")
+
+// ============================================================================
+// JUSTIFICATION DES VALEURS PAR DÉFAUT
+// ============================================================================
+/*
+EMA200 (200) : Standard industrie pour trend bias long terme
+Supertrend (10, 3.0) : Balance sensibilité/bruit pour crypto 
+ADX (14, 25) : Filtre tendances faibles, seuil conservateur
+Donchian (20) : ~1 mois trading crypto, détection breakouts significatifs
+ATR (14, 60%) : Filtre volatility, évite breakouts en range serré
+EMA20 (20) : Pullback court-terme, réactivité good pour crypto
+RSI (14, 40/60) : Standard avec zones élargies pour crypto volatility
+SL ATR (14, 2.0) : Protection robuste sans stops trop serrés
+TP (1.5R, 3.0R) : Ratio reward/risk positif + pyramiding
+Trailing (1R activation, 1.5x ATR) : Protection profits, pas trop agressif  
+Fees (0.1%) : Binance spot standard (maker/taker moyen)
+Slippage (2bp) : Conservateur pour pairs liquides
+Risk (2%) : Kelly conservateur pour crypto volatility
+
+Toutes les justifications détaillées disponibles sur :
+https://github.com/Zelprog/SignalPro-TV/blob/main/Claude.md
+*/

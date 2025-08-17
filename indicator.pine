@@ -1,0 +1,160 @@
+//@version=5
+indicator("SignalPro v1.0.0", shorttitle="SP v1.0", overlay=true, max_labels_count=500)
+
+// ============================================================================
+// SIGNALPRO v1.0.0-rc1 - Indicateur TradingView 
+// Signaux crypto robustes : Trend Filter + Breakout + Pullback + ATR Risk
+// Repository: https://github.com/Zelprog/SignalPro-TV
+// ============================================================================
+
+// === INPUTS CONFIGURATION ===
+// Filtre de Régime
+ema200_len = input.int(200, "EMA200 Length", minval=50, maxval=500, group="🎯 Filtre Régime")
+st_len = input.int(10, "Supertrend ATR Length", minval=5, maxval=20, group="🎯 Filtre Régime") 
+st_mult = input.float(3.0, "Supertrend Multiplier", minval=1.0, maxval=10.0, step=0.1, group="🎯 Filtre Régime")
+use_adx_filter = input.bool(true, "Utiliser filtre ADX", group="🎯 Filtre Régime")
+adx_len = input.int(14, "ADX Length", minval=10, maxval=30, group="🎯 Filtre Régime")
+adx_threshold = input.float(25.0, "ADX Seuil minimum", minval=15.0, maxval=40.0, step=1.0, group="🎯 Filtre Régime")
+
+// Entrées Signaux
+enable_breakout = input.bool(true, "Activer Breakout Donchian", group="📈 Entrées")
+donchian_len = input.int(20, "Donchian Channel Length", minval=10, maxval=50, group="📈 Entrées")
+enable_pullback = input.bool(true, "Activer Pullback", group="📈 Entrées")
+ema20_len = input.int(20, "EMA Pullback Length", minval=10, maxval=50, group="📈 Entrées")
+rsi_len = input.int(14, "RSI Length", minval=10, maxval=21, group="📈 Entrées")
+
+// Gestion Risque
+atr_len = input.int(14, "ATR Length", minval=10, maxval=30, group="🛡️ Gestion Risque")
+atr_sl_mult = input.float(2.0, "ATR Stop Loss Multiplier", minval=1.0, maxval=5.0, step=0.1, group="🛡️ Gestion Risque")
+tp_r_mult1 = input.float(1.5, "Take Profit 1 (R multiple)", minval=0.5, maxval=5.0, step=0.1, group="🛡️ Gestion Risque")
+
+// Affichage
+show_levels = input.bool(true, "Afficher niveaux SL/TP", group="👁️ Affichage")
+show_stats_table = input.bool(true, "Afficher table stats", group="👁️ Affichage")
+
+// === CALCULS INDICATEURS TECHNIQUES ===
+// Moyennes mobiles et tendance
+ema200 = ta.ema(close, ema200_len)
+ema20 = ta.ema(close, ema20_len)
+atr = ta.atr(atr_len)
+
+// Supertrend
+[st_trend, st_line] = ta.supertrend(st_mult, st_len)
+st_bull = st_trend == 1
+st_bear = st_trend == -1
+
+// RSI
+rsi = ta.rsi(close, rsi_len)
+
+// ADX
+[di_plus, di_minus, adx] = ta.dmi(adx_len, adx_len)
+
+// Donchian Channels
+donchian_high = ta.highest(high, donchian_len)
+donchian_low = ta.lowest(low, donchian_len)
+donchian_mid = (donchian_high + donchian_low) / 2
+
+// === FILTRE DE RÉGIME ===
+// Condition de régime haussier
+regime_bull = close > ema200 and st_bull
+regime_bear = close < ema200 and st_bear
+regime_neutral = not regime_bull and not regime_bear
+
+// Filtre ADX optionnel
+adx_ok = not use_adx_filter or adx > adx_threshold
+
+// === LOGIQUE SIGNAUX (PLACEHOLDERS v1.0.0-rc1) ===
+// Breakout Donchian - À améliorer (filtre ATR percentile)
+breakout_long = enable_breakout and regime_bull and adx_ok and close > donchian_high[1]
+breakout_short = enable_breakout and regime_bear and adx_ok and close < donchian_low[1]
+
+// Pullback - À améliorer (RSI cross-over raffiné)
+pullback_long = enable_pullback and regime_bull and adx_ok and close > ema20 and rsi > 50
+pullback_short = enable_pullback and regime_bear and adx_ok and close < ema20 and rsi < 50
+
+// Signaux combinés
+signal_long = breakout_long or pullback_long
+signal_short = breakout_short or pullback_short
+
+// === GESTION POSITIONS (PLACEHOLDERS) ===
+// Variables pour tracking position
+var float entry_price = na
+var float stop_loss = na  
+var float take_profit1 = na
+var bool in_position = false
+
+// Calcul niveaux (quand signal)
+sl_distance = atr * atr_sl_mult
+tp1_distance = sl_distance * tp_r_mult1
+
+if signal_long and not in_position
+    entry_price := close
+    stop_loss := entry_price - sl_distance
+    take_profit1 := entry_price + tp1_distance
+    in_position := true
+
+if signal_short and not in_position  
+    entry_price := close
+    stop_loss := entry_price + sl_distance
+    take_profit1 := entry_price - tp1_distance
+    in_position := true
+
+// === PLOTS ET AFFICHAGE ===
+// Moyennes mobiles
+plot(ema200, "EMA200", color=color.blue, linewidth=2)
+plot(ema20, "EMA20", color=color.orange, linewidth=1)
+
+// Supertrend
+plot(st_line, "Supertrend", color=st_bull ? color.green : color.red, linewidth=2)
+
+// Donchian Channels
+plot(donchian_high, "Donchian High", color=color.gray, style=plot.style_line)
+plot(donchian_low, "Donchian Low", color=color.gray, style=plot.style_line)
+plot(donchian_mid, "Donchian Mid", color=color.gray, style=plot.style_line, linewidth=1)
+
+// Signaux
+plotshape(signal_long, style=shape.triangleup, location=location.belowbar, 
+         color=color.green, size=size.normal, title="Signal LONG")
+plotshape(signal_short, style=shape.triangledown, location=location.abovebar, 
+         color=color.red, size=size.normal, title="Signal SHORT")
+
+// Niveaux SL/TP
+plot(show_levels and not na(stop_loss) ? stop_loss : na, "Stop Loss", 
+     color=color.red, style=plot.style_cross, linewidth=1)
+plot(show_levels and not na(take_profit1) ? take_profit1 : na, "Take Profit 1", 
+     color=color.green, style=plot.style_cross, linewidth=1)
+
+// === TABLE STATISTIQUES (PLACEHOLDER) ===
+if show_stats_table and barstate.islast
+    var table stats_table = table.new(position.top_right, 2, 8, bgcolor=color.white, border_width=1)
+    table.cell(stats_table, 0, 0, "SignalPro", text_color=color.black, text_size=size.normal)
+    table.cell(stats_table, 1, 0, "v1.0.0-rc1", text_color=color.gray, text_size=size.small)
+    table.cell(stats_table, 0, 1, "Régime", text_color=color.black)
+    table.cell(stats_table, 1, 1, regime_bull ? "BULL" : regime_bear ? "BEAR" : "NEUTRAL", 
+               text_color=regime_bull ? color.green : regime_bear ? color.red : color.gray)
+    table.cell(stats_table, 0, 2, "ADX", text_color=color.black)
+    table.cell(stats_table, 1, 2, str.tostring(math.round(adx, 1)), text_color=color.black)
+    table.cell(stats_table, 0, 3, "ATR", text_color=color.black)
+    table.cell(stats_table, 1, 3, str.tostring(math.round(atr, 4)), text_color=color.black)
+    table.cell(stats_table, 0, 4, "RSI", text_color=color.black)  
+    table.cell(stats_table, 1, 4, str.tostring(math.round(rsi, 1)), text_color=color.black)
+    table.cell(stats_table, 0, 5, "Position", text_color=color.black)
+    table.cell(stats_table, 1, 5, in_position ? "ACTIVE" : "FLAT", 
+               text_color=in_position ? color.blue : color.gray)
+    table.cell(stats_table, 0, 6, "GitHub", text_color=color.black)
+    table.cell(stats_table, 1, 6, "SignalPro-TV", text_color=color.blue, text_size=size.small)
+
+// === ALERTES ===
+// Alertes pour intégration future webhook
+alertcondition(signal_long, title="SIGNAL LONG", 
+              message='{"v":"1.0.0","side":"BUY","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
+              
+alertcondition(signal_short, title="SIGNAL SHORT",
+              message='{"v":"1.0.0","side":"SELL","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
+
+// ============================================================================
+// VERSION : 1.0.0-rc1
+// STATUS : Squelette compilable avec plots de base et structure alertes
+// TODO : Logique signaux complète, backtest, gestion position avancée
+// REPO : https://github.com/Zelprog/SignalPro-TV
+// ============================================================================
