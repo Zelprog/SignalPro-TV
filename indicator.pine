@@ -2,7 +2,7 @@
 indicator("SignalPro v1.0.0", shorttitle="SP v1.0", overlay=true, max_labels_count=500)
 
 // ============================================================================
-// SIGNALPRO v1.0.0-rc5 - Indicateur TradingView 
+// SIGNALPRO v1.0.0-rc6 - Indicateur TradingView 
 // Signaux crypto robustes : Trend Filter + Breakout + Pullback + ATR Risk
 // Repository: https://github.com/Zelprog/SignalPro-TV
 // ============================================================================
@@ -34,6 +34,12 @@ rsi_overbought = input.float(60.0, "RSI Seuil surachat", minval=50.0, maxval=80.
 atr_len = input.int(14, "ATR Length", minval=10, maxval=30, group="🛡️ Gestion Risque")
 atr_sl_mult = input.float(2.0, "ATR Stop Loss Multiplier", minval=1.0, maxval=5.0, step=0.1, group="🛡️ Gestion Risque")
 tp_r_mult1 = input.float(1.5, "Take Profit 1 (R multiple)", minval=0.5, maxval=5.0, step=0.1, group="🛡️ Gestion Risque")
+
+// Optimisation Signaux (NOUVEAU)
+enable_state_machine = input.bool(true, "State Machine - Alternance BUY/SELL", group="⚙️ Optimisation")
+min_bars_between_signals = input.int(5, "Barres minimum entre signaux", minval=1, maxval=20, group="⚙️ Optimisation")
+momentum_threshold = input.float(2.0, "Momentum minimum (%)", minval=0.5, maxval=5.0, step=0.1, group="⚙️ Optimisation")
+enable_volume_filter = input.bool(false, "Filtre volume momentum", group="⚙️ Optimisation")
 
 // Affichage
 show_levels = input.bool(true, "Afficher niveaux SL/TP", group="👁️ Affichage")
@@ -116,6 +122,22 @@ early_short = enable_early_trend and early_trend_bear and not regime_bear and ad
 final_signal_long = signal_long or early_long
 final_signal_short = signal_short or early_short
 
+// === OPTIMISATION SIGNAUX - ANTI SUCCESSIFS (NOUVEAU) ===
+// Application State Machine + Filtres Momentum
+optimized_signal_long = final_signal_long and can_buy and momentum_strength_ok and volume_surge and (momentum_starting_bull or not enable_state_machine)
+optimized_signal_short = final_signal_short and can_sell and momentum_strength_ok and volume_surge and (momentum_starting_bear or not enable_state_machine)
+
+// Mise à jour State Machine
+if optimized_signal_long
+    position_state := "LONG"
+    last_signal_price := close
+    bars_since_signal := 0
+
+if optimized_signal_short
+    position_state := "SHORT"
+    last_signal_price := close
+    bars_since_signal := 0
+
 // === SIGNAUX DEBUG (MODE APPRENTISSAGE) ===
 // Signaux RAW (sans filtre de régime strict)
 breakout_long_raw = enable_breakout and adx_ok and close > donchian_high[1] and atr_volatility_ok and breakout_strength_long >= breakout_strength_min
@@ -127,24 +149,48 @@ pullback_short_raw = enable_pullback and adx_ok and (was_overbought or rsi_cross
 debug_long = debug_mode and show_neutral_signals and (breakout_long_raw or pullback_long_raw) and not final_signal_long
 debug_short = debug_mode and show_neutral_signals and (breakout_short_raw or pullback_short_raw) and not final_signal_short
 
-// === GESTION POSITIONS (BASIQUE) ===
+// === GESTION POSITIONS + STATE MACHINE ===
 // Variables pour tracking position
 var float entry_price = na
 var float stop_loss = na  
 var float take_profit1 = na
 var bool in_position = false
 
+// === STATE MACHINE POUR ALTERNANCE SIGNAUX (NOUVEAU) ===
+var string position_state = "FLAT"  // FLAT, LONG, SHORT
+var float last_signal_price = na
+var int bars_since_signal = 0
+
+// Incrémentation compteur barres
+bars_since_signal := bars_since_signal + 1
+
+// Règles d'alternance (éviter signaux successifs)
+can_buy = (position_state == "FLAT" or position_state == "SHORT") and bars_since_signal >= min_bars_between_signals
+can_sell = (position_state == "FLAT" or position_state == "LONG") and bars_since_signal >= min_bars_between_signals
+
+// === FILTRES MOMENTUM QUALITY (NOUVEAU) ===
+// Momentum strength (Rate of Change)
+momentum_roc = ta.roc(close, 10)
+momentum_strength_ok = math.abs(momentum_roc) >= momentum_threshold
+
+// Volume surge (optionnel)
+volume_surge = not enable_volume_filter or volume > ta.sma(volume, 20) * 1.2
+
+// Momentum naissant vs faiblissant
+momentum_starting_bull = momentum_roc > momentum_threshold and momentum_roc[1] <= momentum_threshold
+momentum_starting_bear = momentum_roc < -momentum_threshold and momentum_roc[1] >= -momentum_threshold
+
 // Calcul niveaux (quand signal)
 sl_distance = atr * atr_sl_mult
 tp1_distance = sl_distance * tp_r_mult1
 
-if final_signal_long and not in_position
+if optimized_signal_long and not in_position
     entry_price := close
     stop_loss := entry_price - sl_distance
     take_profit1 := entry_price + tp1_distance
     in_position := true
 
-if final_signal_short and not in_position  
+if optimized_signal_short and not in_position  
     entry_price := close
     stop_loss := entry_price + sl_distance
     take_profit1 := entry_price - tp1_distance
@@ -176,9 +222,13 @@ plot(donchian_high, "Donchian High", color=color.gray, style=plot.style_line)
 plot(donchian_low, "Donchian Low", color=color.gray, style=plot.style_line)
 plot(donchian_mid, "Donchian Mid", color=color.gray, style=plot.style_line, linewidth=1)
 
-// Signaux d'entrée
-plotshape(signal_long, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.normal, title="BUY ENTRY")
-plotshape(signal_short, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.normal, title="SELL ENTRY")
+// Signaux d'entrée OPTIMISÉS (nouveaux - avec State Machine)
+plotshape(optimized_signal_long, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.normal, title="BUY OPTIMIZED")
+plotshape(optimized_signal_short, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.normal, title="SELL OPTIMIZED")
+
+// Signaux RAW (pour comparaison - taille réduite)
+plotshape(final_signal_long and not optimized_signal_long, style=shape.triangleup, location=location.belowbar, color=color.gray, size=size.tiny, title="BUY RAW (filtered)")
+plotshape(final_signal_short and not optimized_signal_short, style=shape.triangledown, location=location.abovebar, color=color.gray, size=size.tiny, title="SELL RAW (filtered)")
 
 // Signaux de sortie (nouveaux)
 plotshape(exit_long_sl, style=shape.xcross, location=location.abovebar, color=color.red, size=size.small, title="EXIT STOP LOSS")
@@ -202,7 +252,7 @@ plot(show_levels and not na(take_profit1) ? take_profit1 : na, "Take Profit 1", 
 if show_stats_table and barstate.islast
     var table stats_table = table.new(position.top_right, 2, 8, bgcolor=color.white, border_width=1)
     table.cell(stats_table, 0, 0, "Statistiques", text_color=color.black, text_size=size.normal)
-    table.cell(stats_table, 1, 0, "v1.0.0-rc5", text_color=color.gray, text_size=size.small)
+    table.cell(stats_table, 1, 0, "v1.0.0-rc6", text_color=color.gray, text_size=size.small)
     table.cell(stats_table, 0, 1, "Régime", text_color=color.black)
     table.cell(stats_table, 1, 1, regime_bull ? "BULL" : regime_bear ? "BEAR" : "NEUTRAL", text_color=regime_bull ? color.green : regime_bear ? color.red : color.gray)
     table.cell(stats_table, 0, 2, "ADX", text_color=color.black)
@@ -213,17 +263,15 @@ if show_stats_table and barstate.islast
     table.cell(stats_table, 1, 4, str.tostring(math.round(rsi, 1)), text_color=color.black)
     table.cell(stats_table, 0, 5, "Position", text_color=color.black)
     table.cell(stats_table, 1, 5, in_position ? "ACTIVE" : "FLAT", text_color=in_position ? color.blue : color.gray)
-    table.cell(stats_table, 0, 6, "GitHub", text_color=color.black)
-    table.cell(stats_table, 1, 6, "SignalPro-TV", text_color=color.blue, text_size=size.small)
 
 // === ALERTES ===
 // Alertes pour intégration future webhook
-alertcondition(final_signal_long, title="SIGNAL LONG", message='{"v":"1.0.0","side":"BUY","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
+alertcondition(optimized_signal_long, title="SIGNAL LONG", message='{"v":"1.0.0","side":"BUY","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
               
-alertcondition(final_signal_short, title="SIGNAL SHORT", message='{"v":"1.0.0","side":"SELL","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
+alertcondition(optimized_signal_short, title="SIGNAL SHORT", message='{"v":"1.0.0","side":"SELL","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
 
 // ============================================================================
-// VERSION : 1.0.0-rc5
-// STATUS : Early Trend Detection ajouté - Capture uptrends précoces
-// NOUVEAU : Triangles cyan/fuchsia pour tendances naissantes + Filtres assouplis
+// VERSION : 1.0.0-rc6
+// STATUS : State Machine + Momentum Optimization - Signaux alternés optimaux
+// NOUVEAU : Anti-signaux successifs + Filtres momentum + Exploitation optimale
 // ============================================================================
