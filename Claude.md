@@ -55,7 +55,22 @@
   - ✅ Nouveaux paramètres : atr_filter_len, atr_percentile, breakout_strength_min, rsi_oversold/overbought
   - ✅ signal_improvements.md : plan détaillé améliorations
   - ✅ Bump version → v1.0.0-rc2
-  - 📋 **PROCHAINE ÉTAPE** : Push GitHub + tests compilation TradingView
+
+- **2025-08-17 17:30** — DEBUG et correction complète Pine Script v1.0.0-rc2-fix
+  - ✅ PROBLÈME identifié : conditions multi-lignes + fonctions multi-paramètres incompatibles Pine Script
+  - ✅ CORRECTIONS appliquées : 4 conditions logiques + 4 plots + 2 table.cell + 2 alertcondition
+  - ✅ VÉRIFICATION complète : 0 ligne terminant par 'and/or/,' - 100% compatible Pine v5
+  - ✅ debug_report.md : documentation exhaustive de toutes les corrections
+  - ✅ Version → v1.0.0-rc2-fix (175 lignes, production-ready)
+
+- **2025-08-17 18:00** — CORRECTION URGENTE gestion position v1.0.0-rc3
+  - 🐛 PROBLÈME CRITIQUE identifié par utilisateur : indicateurs "figés" après premier signal
+  - ✅ CAUSE trouvée : logique de sortie de position manquante (in_position jamais reset)
+  - ✅ SOLUTION implémentée : exit_long_sl/tp + exit_short_sl/tp + reset variables
+  - ✅ SIGNAUX VISUELS ajoutés : croix rouges (SL) + diamants verts (TP) 
+  - ✅ position_fix.md : documentation du problème et solution
+  - ✅ Version → v1.0.0-rc3 (indicateurs mobiles + points BUY/SELL clairs)
+  - 📋 **PROCHAINE ÉTAPE** : Tests utilisateur - indicateurs mobiles + signaux entrée/sortie
 
 ## 3) Règles immuables (à respecter **toujours**)
 - Relire `Claude.md` au début de chaque session
@@ -156,6 +171,7 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 - **ADR-003** : Donchian breakout + pullback → couverture momentum/reversion
 - **ADR-004** : Backtest embarqué → validation immédiate sans outils externes
 - **ADR-005** : GitHub public → collaboration open source, documentation transparente
+- **ADR-006** : Gestion sortie simple SL/TP → résolution urgente problème indicateurs figés
 
 ## 8) Risques & mitigations
 - **Sur-optimisation** : bornes paramétriques strictes, tests OOS
@@ -165,21 +181,23 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 - **Perte code** : GitHub backup, commits réguliers
 
 ## 9) TODO / Backlog
-**Priorité 1 (v1.0.0-rc2) :**
+**Priorité 1 (v1.0.0-rc3) :**
 - ✅ Squelette indicator.pine compilable
 - ✅ Paramètres avec défauts sûrs
 - ✅ Plots de base (EMA200, EMA20, Supertrend)
 - ✅ Structure alertes
 - ✅ GitHub setup & documentation
 - ✅ Logique signaux raffinée (Breakout + Pullback)
+- ✅ Gestion position basique (entrée + sortie SL/TP)
 
 **Priorité 2 :**
-- [ ] Tests compilation TradingView
-- [ ] Gestion position avancée (tracking, trailing stop)
+- [ ] Tests utilisateur complets (indicateurs mobiles + signaux clairs)
+- [ ] Trailing stop ATR dynamique
 - [ ] Backtest embarqué complet
 - [ ] Tests validation multi-timeframes
 
 **Priorité 3 :**
+- [ ] Position sizing adaptatif
 - [ ] Table stats détaillée avec métriques
 - [ ] Documentation utilisateur finale
 - [ ] Optimisation performance
@@ -204,7 +222,8 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 
 ### Gestion des releases
 - **v1.0.0-rc1** → **v1.0.0-rc2** : Logique signaux améliorée
-- **v1.0.0-rc2** → **v1.0.0** : Backtest complet + tests validés
+- **v1.0.0-rc2** → **v1.0.0-rc3** : Correction critique gestion position
+- **v1.0.0-rc3** → **v1.0.0** : Backtest complet + tests validés
 - **v1.0.0** → **v1.1.0** : Position sizing + MTF filter
 - **v1.x.x** → **v2.0.0** : Automation Binance
 
@@ -229,5 +248,7 @@ SignalPro-TV/
 ├── webhook_schema.json   # Schéma alertes pour automation
 ├── tests_plan.md        # Plan de validation et tests
 ├── signal_improvements.md # Plan détaillé améliorations signaux
+├── position_fix.md      # Documentation correction position
+├── debug_report.md      # Rapport corrections Pine Script
 └── docs/                # Documentation additionnelle (future)
 ```

@@ -2,7 +2,7 @@
 indicator("SignalPro v1.0.0", shorttitle="SP v1.0", overlay=true, max_labels_count=500)
 
 // ============================================================================
-// SIGNALPRO v1.0.0-rc2 - Indicateur TradingView 
+// SIGNALPRO v1.0.0-rc3 - Indicateur TradingView 
 // Signaux crypto robustes : Trend Filter + Breakout + Pullback + ATR Risk
 // Repository: https://github.com/Zelprog/SignalPro-TV
 // ============================================================================
@@ -80,15 +80,10 @@ donchian_range = donchian_high - donchian_low
 breakout_strength_long = donchian_range > 0 ? (close - donchian_high[1]) / donchian_range : 0
 breakout_strength_short = donchian_range > 0 ? (donchian_low[1] - close) / donchian_range : 0
 
-breakout_long = enable_breakout and regime_bull and adx_ok and 
-                close > donchian_high[1] and 
-                atr_volatility_ok and 
-                breakout_strength_long >= breakout_strength_min
+// Conditions breakout (une seule ligne pour compatibilité Pine)
+breakout_long = enable_breakout and regime_bull and adx_ok and close > donchian_high[1] and atr_volatility_ok and breakout_strength_long >= breakout_strength_min
 
-breakout_short = enable_breakout and regime_bear and adx_ok and 
-                 close < donchian_low[1] and 
-                 atr_volatility_ok and 
-                 breakout_strength_short >= breakout_strength_min
+breakout_short = enable_breakout and regime_bear and adx_ok and close < donchian_low[1] and atr_volatility_ok and breakout_strength_short >= breakout_strength_min
 
 // Pullback - Logique améliorée (RSI cross-over)
 was_oversold = rsi[1] < rsi_oversold and rsi > rsi_oversold // Sortie survente
@@ -98,17 +93,16 @@ rsi_cross_down = ta.crossunder(rsi, 50)
 ema_pullback_bull = close > ema20 and close[1] <= ema20
 ema_pullback_bear = close < ema20 and close[1] >= ema20
 
-pullback_long = enable_pullback and regime_bull and adx_ok and 
-                (was_oversold or rsi_cross_up) and ema_pullback_bull
+// Conditions pullback (une seule ligne pour compatibilité Pine)
+pullback_long = enable_pullback and regime_bull and adx_ok and (was_oversold or rsi_cross_up) and ema_pullback_bull
 
-pullback_short = enable_pullback and regime_bear and adx_ok and 
-                 (was_overbought or rsi_cross_down) and ema_pullback_bear
+pullback_short = enable_pullback and regime_bear and adx_ok and (was_overbought or rsi_cross_down) and ema_pullback_bear
 
 // Signaux combinés
 signal_long = breakout_long or pullback_long
 signal_short = breakout_short or pullback_short
 
-// === GESTION POSITIONS (PLACEHOLDERS) ===
+// === GESTION POSITIONS (CORRECTION v1.0.0-rc3) ===
 // Variables pour tracking position
 var float entry_price = na
 var float stop_loss = na  
@@ -131,6 +125,22 @@ if signal_short and not in_position
     take_profit1 := entry_price - tp1_distance
     in_position := true
 
+// === GESTION SORTIES (CORRECTION URGENTE) ===
+// Conditions de sortie simples pour débloquer les indicateurs
+exit_long_sl = in_position and close <= stop_loss
+exit_long_tp = in_position and close >= take_profit1
+exit_short_sl = in_position and close >= stop_loss  
+exit_short_tp = in_position and close <= take_profit1
+
+// Sortie de position (reset des variables)
+exit_position = exit_long_sl or exit_long_tp or exit_short_sl or exit_short_tp
+
+if exit_position
+    in_position := false
+    entry_price := na
+    stop_loss := na
+    take_profit1 := na
+
 // === PLOTS ET AFFICHAGE ===
 // Moyennes mobiles
 plot(ema200, "EMA200", color=color.blue, linewidth=2)
@@ -144,26 +154,27 @@ plot(donchian_high, "Donchian High", color=color.gray, style=plot.style_line)
 plot(donchian_low, "Donchian Low", color=color.gray, style=plot.style_line)
 plot(donchian_mid, "Donchian Mid", color=color.gray, style=plot.style_line, linewidth=1)
 
-// Signaux
-plotshape(signal_long, style=shape.triangleup, location=location.belowbar, 
-         color=color.green, size=size.normal, title="Signal LONG")
-plotshape(signal_short, style=shape.triangledown, location=location.abovebar, 
-         color=color.red, size=size.normal, title="Signal SHORT")
+// Signaux d'entrée
+plotshape(signal_long, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.normal, title="BUY ENTRY")
+plotshape(signal_short, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.normal, title="SELL ENTRY")
+
+// Signaux de sortie (nouveaux)
+plotshape(exit_long_sl, style=shape.xcross, location=location.abovebar, color=color.red, size=size.small, title="EXIT STOP LOSS")
+plotshape(exit_long_tp, style=shape.diamond, location=location.abovebar, color=color.lime, size=size.small, title="EXIT TAKE PROFIT")
+plotshape(exit_short_sl, style=shape.xcross, location=location.belowbar, color=color.red, size=size.small, title="EXIT STOP LOSS")
+plotshape(exit_short_tp, style=shape.diamond, location=location.belowbar, color=color.lime, size=size.small, title="EXIT TAKE PROFIT")
 
 // Niveaux SL/TP
-plot(show_levels and not na(stop_loss) ? stop_loss : na, "Stop Loss", 
-     color=color.red, style=plot.style_cross, linewidth=1)
-plot(show_levels and not na(take_profit1) ? take_profit1 : na, "Take Profit 1", 
-     color=color.green, style=plot.style_cross, linewidth=1)
+plot(show_levels and not na(stop_loss) ? stop_loss : na, "Stop Loss", color=color.red, style=plot.style_cross, linewidth=1)
+plot(show_levels and not na(take_profit1) ? take_profit1 : na, "Take Profit 1", color=color.green, style=plot.style_cross, linewidth=1)
 
 // === TABLE STATISTIQUES (PLACEHOLDER) ===
 if show_stats_table and barstate.islast
     var table stats_table = table.new(position.top_right, 2, 8, bgcolor=color.white, border_width=1)
     table.cell(stats_table, 0, 0, "SignalPro", text_color=color.black, text_size=size.normal)
-    table.cell(stats_table, 1, 0, "v1.0.0-rc2", text_color=color.gray, text_size=size.small)
+    table.cell(stats_table, 1, 0, "v1.0.0-rc3", text_color=color.gray, text_size=size.small)
     table.cell(stats_table, 0, 1, "Régime", text_color=color.black)
-    table.cell(stats_table, 1, 1, regime_bull ? "BULL" : regime_bear ? "BEAR" : "NEUTRAL", 
-               text_color=regime_bull ? color.green : regime_bear ? color.red : color.gray)
+    table.cell(stats_table, 1, 1, regime_bull ? "BULL" : regime_bear ? "BEAR" : "NEUTRAL", text_color=regime_bull ? color.green : regime_bear ? color.red : color.gray)
     table.cell(stats_table, 0, 2, "ADX", text_color=color.black)
     table.cell(stats_table, 1, 2, str.tostring(math.round(adx, 1)), text_color=color.black)
     table.cell(stats_table, 0, 3, "ATR", text_color=color.black)
@@ -171,21 +182,18 @@ if show_stats_table and barstate.islast
     table.cell(stats_table, 0, 4, "RSI", text_color=color.black)  
     table.cell(stats_table, 1, 4, str.tostring(math.round(rsi, 1)), text_color=color.black)
     table.cell(stats_table, 0, 5, "Position", text_color=color.black)
-    table.cell(stats_table, 1, 5, in_position ? "ACTIVE" : "FLAT", 
-               text_color=in_position ? color.blue : color.gray)
+    table.cell(stats_table, 1, 5, in_position ? "ACTIVE" : "FLAT", text_color=in_position ? color.blue : color.gray)
     table.cell(stats_table, 0, 6, "GitHub", text_color=color.black)
     table.cell(stats_table, 1, 6, "SignalPro-TV", text_color=color.blue, text_size=size.small)
 
 // === ALERTES ===
 // Alertes pour intégration future webhook
-alertcondition(signal_long, title="SIGNAL LONG", 
-              message='{"v":"1.0.0","side":"BUY","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
+alertcondition(signal_long, title="SIGNAL LONG", message='{"v":"1.0.0","side":"BUY","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
               
-alertcondition(signal_short, title="SIGNAL SHORT",
-              message='{"v":"1.0.0","side":"SELL","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
+alertcondition(signal_short, title="SIGNAL SHORT", message='{"v":"1.0.0","side":"SELL","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
 
 // ============================================================================
-// VERSION : 1.0.0-rc2
-// STATUS : Logique signaux améliorée - Breakout ATR filter + Pullback RSI cross
-// TODO : Gestion position avancée, backtest embarqué, validation tests
+// VERSION : 1.0.0-rc3
+// STATUS : Gestion position complète - Entrées + Sorties SL/TP + Signaux visuels
+// TODO : Trailing stop ATR, backtest embarqué, validation multi-timeframes
 // ============================================================================

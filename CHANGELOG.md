@@ -5,6 +5,38 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-rc3] - 2025-08-17
+
+### Corrigé (URGENCE)
+- **🐛 PROBLÈME CRITIQUE** : Indicateurs "figés" après premier signal
+- **✅ SOLUTION** : Ajout logique de sortie de position complète
+- **Gestion sorties** : SL (Stop Loss) + TP (Take Profit) fonctionnels
+- **Reset position** : Variables remises à `na` après sortie
+- **Signaux visuels** : EXIT markers (croix rouge SL, diamant vert TP)
+
+### Amélioré
+- **Points BUY/SELL clairs** : Triangles entrée + Croix/Diamants sortie
+- **Titles explicites** : "BUY ENTRY", "SELL ENTRY", "EXIT STOP LOSS", "EXIT TAKE PROFIT"
+- **Indicateurs mobiles** : SL/TP se mettent à jour avec nouveaux signaux
+- **Table stats v1.0.0-rc3** : Version mise à jour
+
+### Technique
+- Variables `in_position`, `entry_price`, `stop_loss`, `take_profit1` correctement reset
+- Conditions `exit_long_sl/tp` et `exit_short_sl/tp` implémentées
+- 4 nouveaux `plotshape()` pour signaux de sortie
+- Compatible Pine Script v5 (toutes lignes une seule ligne)
+
+### Objectif
+- **Résolution urgente** : Tests TradingView maintenant possibles
+- **UX améliorée** : Points d'entrée ET sortie clairement visibles
+- **Préparation v1.0.0** : Base solide pour trailing stop + backtest
+
+### Tests recommandés
+- [ ] Indicateurs mobiles avec déplacement chart ✋ 
+- [ ] Signaux BUY → EXIT visibles ✋
+- [ ] SL/TP se reset après sortie ✋
+- [ ] Nouveaux signaux possibles après EXIT ✋
+
 ## [1.0.0-rc2] - 2025-08-17
 
 ### Amélioré
@@ -78,3 +110,4 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - [Plan de tests](tests_plan.md)
 - [Schéma webhook](webhook_schema.json)
 - [Améliorations signaux](signal_improvements.md)
+- [Correction position](position_fix.md)
