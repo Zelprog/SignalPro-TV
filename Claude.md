@@ -61,16 +61,28 @@
   - ✅ CORRECTIONS appliquées : 4 conditions logiques + 4 plots + 2 table.cell + 2 alertcondition
   - ✅ VÉRIFICATION complète : 0 ligne terminant par 'and/or/,' - 100% compatible Pine v5
   - ✅ debug_report.md : documentation exhaustive de toutes les corrections
-  - ✅ Version → v1.0.0-rc2-fix (175 lignes, production-ready)
+  - ✅ Version → v1.0.0-rc2-fix (175 lignes optimisées de 189)
 
-- **2025-08-17 18:00** — CORRECTION URGENTE gestion position v1.0.0-rc3
-  - 🐛 PROBLÈME CRITIQUE identifié par utilisateur : indicateurs "figés" après premier signal
-  - ✅ CAUSE trouvée : logique de sortie de position manquante (in_position jamais reset)
-  - ✅ SOLUTION implémentée : exit_long_sl/tp + exit_short_sl/tp + reset variables
-  - ✅ SIGNAUX VISUELS ajoutés : croix rouges (SL) + diamants verts (TP) 
+- **2025-08-17 17:45** — Correction CRITIQUE problème indicateurs figés v1.0.0-rc3
+  - 🚨 **PROBLÈME MAJEUR identifié** : Indicateurs "figés" à l'ancienne position (user feedback)
+  - ✅ **CAUSE RACINE** : Pas de logique de sortie de position (in_position restait true indéfiniment)
+  - ✅ **SOLUTION implémentée** : Logique sorties complètes SL/TP + reset variables position
+  - ✅ **SIGNAUX VISUELS** : Triangles entrée + Croix SL + Diamants TP + États position ACTIVE/FLAT
   - ✅ position_fix.md : documentation du problème et solution
   - ✅ Version → v1.0.0-rc3 (indicateurs mobiles + points BUY/SELL clairs)
   - 📋 **PROCHAINE ÉTAPE** : Tests utilisateur - indicateurs mobiles + signaux entrée/sortie
+
+- **2025-08-17 18:00** — Early Trend Detection v1.0.0-rc5 (RÉPONSE FEEDBACK CRITIQUE)
+  - 🚨 **FEEDBACK UTILISATEUR** : Grosse uptrend manquée (Mai-Juin 2025) - Problème majeur identifié
+  - ✅ **Early Trend Detection** : Nouvelle logique pour capture précoce des tendances naissantes
+  - ✅ **Paramètres assouplis** : Donchian 20→15, ATR 60%→40%, ADX 25→20, Strength 0.1→0.05
+  - ✅ **Signaux Early Trend** : Triangles cyan/fuchsia pour tendances avant confirmation Supertrend
+  - ✅ **Logique EMA** : close>ema20 ET ema20>ema200 + breakout 10-périodes pour réactivité
+  - ✅ rc5_improvements.md : Documentation complète des améliorations anti-missed-trends
+  - 📋 **TESTS EN COURS** : Validation capture uptrend historique + nouveaux signaux cyan/fuchsia
+
+  - ✅ tests_plan.md : procédure validation BTCUSDT 15m/1h
+  - 📋 **NEXT** : Tests compilation TradingView + logique signaux breakout/pullback
 
 ## 3) Règles immuables (à respecter **toujours**)
 - Relire `Claude.md` au début de chaque session
@@ -171,7 +183,6 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 - **ADR-003** : Donchian breakout + pullback → couverture momentum/reversion
 - **ADR-004** : Backtest embarqué → validation immédiate sans outils externes
 - **ADR-005** : GitHub public → collaboration open source, documentation transparente
-- **ADR-006** : Gestion sortie simple SL/TP → résolution urgente problème indicateurs figés
 
 ## 8) Risques & mitigations
 - **Sur-optimisation** : bornes paramétriques strictes, tests OOS
@@ -181,23 +192,23 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 - **Perte code** : GitHub backup, commits réguliers
 
 ## 9) TODO / Backlog
-**Priorité 1 (v1.0.0-rc3) :**
+**Priorité 1 (v1.0.0-rc5) :**
 - ✅ Squelette indicator.pine compilable
 - ✅ Paramètres avec défauts sûrs
 - ✅ Plots de base (EMA200, EMA20, Supertrend)
 - ✅ Structure alertes
 - ✅ GitHub setup & documentation
 - ✅ Logique signaux raffinée (Breakout + Pullback)
-- ✅ Gestion position basique (entrée + sortie SL/TP)
+- ✅ Correction problème indicateurs figés
+- ✅ Early Trend Detection pour capture uptrends manquées
 
 **Priorité 2 :**
-- [ ] Tests utilisateur complets (indicateurs mobiles + signaux clairs)
+- [ ] Tests validation capture uptrend Mai-Juin 2025
 - [ ] Trailing stop ATR dynamique
 - [ ] Backtest embarqué complet
 - [ ] Tests validation multi-timeframes
 
 **Priorité 3 :**
-- [ ] Position sizing adaptatif
 - [ ] Table stats détaillée avec métriques
 - [ ] Documentation utilisateur finale
 - [ ] Optimisation performance
@@ -222,8 +233,9 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 
 ### Gestion des releases
 - **v1.0.0-rc1** → **v1.0.0-rc2** : Logique signaux améliorée
-- **v1.0.0-rc2** → **v1.0.0-rc3** : Correction critique gestion position
-- **v1.0.0-rc3** → **v1.0.0** : Backtest complet + tests validés
+- **v1.0.0-rc2** → **v1.0.0-rc3** : Correction problème indicateurs figés
+- **v1.0.0-rc3** → **v1.0.0-rc5** : Early Trend Detection anti-missed-trends
+- **v1.0.0-rc5** → **v1.0.0** : Backtest complet + tests validés
 - **v1.0.0** → **v1.1.0** : Position sizing + MTF filter
 - **v1.x.x** → **v2.0.0** : Automation Binance
 
@@ -248,7 +260,6 @@ SignalPro-TV/
 ├── webhook_schema.json   # Schéma alertes pour automation
 ├── tests_plan.md        # Plan de validation et tests
 ├── signal_improvements.md # Plan détaillé améliorations signaux
-├── position_fix.md      # Documentation correction position
-├── debug_report.md      # Rapport corrections Pine Script
+├── rc5_improvements.md   # Améliorations Early Trend Detection
 └── docs/                # Documentation additionnelle (future)
 ```
