@@ -5,6 +5,26 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-rc2] - 2025-08-17
+
+### Amélioré
+- **Logique Breakout Donchian raffinée** : ajout filtre volatilité ATR percentile
+- **Breakout Strength** : calcul force breakout relatif à la range Donchian
+- **Pullback RSI amélioré** : implémentation RSI cross-over et sortie survente/surachat
+- **Paramètres avancés** : atr_filter_len, atr_percentile, breakout_strength_min, rsi_oversold/overbought
+- **Filtrage intelligent** : réduction signaux en range serré via ATR percentile (60% défaut)
+
+### Technique
+- Ajout `ta.percentrank()` pour classement volatilité relative
+- Calculs `breakout_strength` normalisés par range Donchian
+- Logique RSI `was_oversold/overbought` + `ta.crossover/crossunder`
+- Conditions `ema_pullback_bull/bear` pour confirmation retracement
+
+### Objectif
+- **Réduction faux signaux** : Éviter breakouts en range serré
+- **Amélioration qualité** : Signaux avec confirmation momentum/reversion
+- **Robustesse** : Filtres adaptatifs selon conditions marché
+
 ## [1.0.0-rc1] - 2025-08-17
 
 ### Ajouté
@@ -35,21 +55,11 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Système d'alertes JSON pour automation future
 
 ### À venir (v1.0.0)
-- Logique signaux Breakout Donchian raffinée avec filtre ATR percentile
-- Logique signaux Pullback complète (RSI cross-over, conditions strict)
 - Gestion position avancée (tracking, trailing stop, sorties multiples)
 - Calculs backtest avec fees/slippage et métriques détaillées
 - Table statistiques complète (PnL, DD, PF, HR, Sharpe)
 - Tests validation sur BTCUSDT 15m/1h/4h + autres pairs
 - Documentation utilisateur finale avec exemples
-
-### Tests planifiés
-- Compilation TradingView Pine Editor
-- Validation visuelle BTCUSDT 15m/1h
-- Tests fonctionnels logique signaux
-- Tests alertes et format JSON
-- Tests paramètres et edge cases
-- Validation cross-timeframes et multi-pairs
 
 ---
 
@@ -67,3 +77,4 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - [Documentation complète](Claude.md)
 - [Plan de tests](tests_plan.md)
 - [Schéma webhook](webhook_schema.json)
+- [Améliorations signaux](signal_improvements.md)

@@ -41,8 +41,21 @@
   - ✅ indicator.pine : squelette compilable v5 avec plots EMA200/EMA20/Supertrend/Donchian
   - ✅ webhook_schema.json v1.0.0 : schéma complet avec exemples et validation
   - ✅ tests_plan.md : procédure validation BTCUSDT 15m/1h
-  - ✅ GitHub repo : https://github.com/Zelprog/SignalPro-TV
-  - 📋 **NEXT** : Tests compilation TradingView + logique signaux breakout/pullback
+
+- **2025-08-17 16:30** — Intégration GitHub réussie
+  - ✅ Repository public créé : https://github.com/Zelprog/SignalPro-TV
+  - ✅ Push complet structure projet (7 fichiers)
+  - ✅ Documentation GitHub : README.md, badges, liens
+  - ✅ Workflow Git intégré dans Claude.md (section 10)
+  - ✅ ADR-005 : Décision repository public pour collaboration open source
+
+- **2025-08-17 17:00** — Amélioration logique signaux v1.0.0-rc2
+  - ✅ Breakout Donchian raffiné : filtre ATR percentile + breakout strength
+  - ✅ Pullback RSI amélioré : cross-over + survente/surachat + EMA confirmation
+  - ✅ Nouveaux paramètres : atr_filter_len, atr_percentile, breakout_strength_min, rsi_oversold/overbought
+  - ✅ signal_improvements.md : plan détaillé améliorations
+  - ✅ Bump version → v1.0.0-rc2
+  - 📋 **PROCHAINE ÉTAPE** : Push GitHub + tests compilation TradingView
 
 ## 3) Règles immuables (à respecter **toujours**)
 - Relire `Claude.md` au début de chaque session
@@ -152,24 +165,24 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 - **Perte code** : GitHub backup, commits réguliers
 
 ## 9) TODO / Backlog
-**Priorité 1 (v1.0.0-rc1) :**
+**Priorité 1 (v1.0.0-rc2) :**
 - ✅ Squelette indicator.pine compilable
 - ✅ Paramètres avec défauts sûrs
 - ✅ Plots de base (EMA200, EMA20, Supertrend)
 - ✅ Structure alertes
 - ✅ GitHub setup & documentation
+- ✅ Logique signaux raffinée (Breakout + Pullback)
 
 **Priorité 2 :**
 - [ ] Tests compilation TradingView
-- [ ] Logique signaux Breakout Donchian raffinée
-- [ ] Logique signaux Pullback complète
-- [ ] Gestion SL/TP/Trailing avancée
+- [ ] Gestion position avancée (tracking, trailing stop)
+- [ ] Backtest embarqué complet
+- [ ] Tests validation multi-timeframes
 
 **Priorité 3 :**
-- [ ] Backtest complet avec métriques
-- [ ] Table stats détaillée
-- [ ] Tests validation multi-timeframes
+- [ ] Table stats détaillée avec métriques
 - [ ] Documentation utilisateur finale
+- [ ] Optimisation performance
 
 ## 10) Workflow Git intégré
 
@@ -190,7 +203,8 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 - **bump:** montée de version
 
 ### Gestion des releases
-- **v1.0.0-rc1** → **v1.0.0** : Backtest complet + tests validés
+- **v1.0.0-rc1** → **v1.0.0-rc2** : Logique signaux améliorée
+- **v1.0.0-rc2** → **v1.0.0** : Backtest complet + tests validés
 - **v1.0.0** → **v1.1.0** : Position sizing + MTF filter
 - **v1.x.x** → **v2.0.0** : Automation Binance
 
@@ -214,5 +228,6 @@ SignalPro-TV/
 ├── parameters.pine       # Définition paramètres avec justifications
 ├── webhook_schema.json   # Schéma alertes pour automation
 ├── tests_plan.md        # Plan de validation et tests
+├── signal_improvements.md # Plan détaillé améliorations signaux
 └── docs/                # Documentation additionnelle (future)
 ```

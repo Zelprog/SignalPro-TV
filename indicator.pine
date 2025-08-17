@@ -2,7 +2,7 @@
 indicator("SignalPro v1.0.0", shorttitle="SP v1.0", overlay=true, max_labels_count=500)
 
 // ============================================================================
-// SIGNALPRO v1.0.0-rc1 - Indicateur TradingView 
+// SIGNALPRO v1.0.0-rc2 - Indicateur TradingView 
 // Signaux crypto robustes : Trend Filter + Breakout + Pullback + ATR Risk
 // Repository: https://github.com/Zelprog/SignalPro-TV
 // ============================================================================
@@ -19,9 +19,15 @@ adx_threshold = input.float(25.0, "ADX Seuil minimum", minval=15.0, maxval=40.0,
 // Entrées Signaux
 enable_breakout = input.bool(true, "Activer Breakout Donchian", group="📈 Entrées")
 donchian_len = input.int(20, "Donchian Channel Length", minval=10, maxval=50, group="📈 Entrées")
+atr_filter_len = input.int(14, "ATR Filter Length", minval=10, maxval=30, group="📈 Entrées")
+atr_percentile = input.float(60.0, "ATR Percentile minimum (%)", minval=40.0, maxval=80.0, step=5.0, group="📈 Entrées")
+breakout_strength_min = input.float(0.1, "Breakout Strength Min", minval=0.05, maxval=0.5, step=0.05, group="📈 Entrées")
+
 enable_pullback = input.bool(true, "Activer Pullback", group="📈 Entrées")
 ema20_len = input.int(20, "EMA Pullback Length", minval=10, maxval=50, group="📈 Entrées")
 rsi_len = input.int(14, "RSI Length", minval=10, maxval=21, group="📈 Entrées")
+rsi_oversold = input.float(40.0, "RSI Seuil survente", minval=20.0, maxval=50.0, step=5.0, group="📈 Entrées")
+rsi_overbought = input.float(60.0, "RSI Seuil surachat", minval=50.0, maxval=80.0, step=5.0, group="📈 Entrées")
 
 // Gestion Risque
 atr_len = input.int(14, "ATR Length", minval=10, maxval=30, group="🛡️ Gestion Risque")
@@ -63,14 +69,40 @@ regime_neutral = not regime_bull and not regime_bear
 // Filtre ADX optionnel
 adx_ok = not use_adx_filter or adx > adx_threshold
 
-// === LOGIQUE SIGNAUX (PLACEHOLDERS v1.0.0-rc1) ===
-// Breakout Donchian - À améliorer (filtre ATR percentile)
-breakout_long = enable_breakout and regime_bull and adx_ok and close > donchian_high[1]
-breakout_short = enable_breakout and regime_bear and adx_ok and close < donchian_low[1]
+// === LOGIQUE SIGNAUX (AMÉLIORÉE v1.0.0) ===
+// Filtre volatilité ATR pour breakouts
+atr_filter = ta.atr(atr_filter_len)
+atr_percentile_rank = ta.percentrank(atr_filter, 100)
+atr_volatility_ok = atr_percentile_rank >= atr_percentile
 
-// Pullback - À améliorer (RSI cross-over raffiné)
-pullback_long = enable_pullback and regime_bull and adx_ok and close > ema20 and rsi > 50
-pullback_short = enable_pullback and regime_bear and adx_ok and close < ema20 and rsi < 50
+// Breakout Donchian - Logique raffinée
+donchian_range = donchian_high - donchian_low
+breakout_strength_long = donchian_range > 0 ? (close - donchian_high[1]) / donchian_range : 0
+breakout_strength_short = donchian_range > 0 ? (donchian_low[1] - close) / donchian_range : 0
+
+breakout_long = enable_breakout and regime_bull and adx_ok and 
+                close > donchian_high[1] and 
+                atr_volatility_ok and 
+                breakout_strength_long >= breakout_strength_min
+
+breakout_short = enable_breakout and regime_bear and adx_ok and 
+                 close < donchian_low[1] and 
+                 atr_volatility_ok and 
+                 breakout_strength_short >= breakout_strength_min
+
+// Pullback - Logique améliorée (RSI cross-over)
+was_oversold = rsi[1] < rsi_oversold and rsi > rsi_oversold // Sortie survente
+was_overbought = rsi[1] > rsi_overbought and rsi < rsi_overbought // Sortie surachat
+rsi_cross_up = ta.crossover(rsi, 50)
+rsi_cross_down = ta.crossunder(rsi, 50)
+ema_pullback_bull = close > ema20 and close[1] <= ema20
+ema_pullback_bear = close < ema20 and close[1] >= ema20
+
+pullback_long = enable_pullback and regime_bull and adx_ok and 
+                (was_oversold or rsi_cross_up) and ema_pullback_bull
+
+pullback_short = enable_pullback and regime_bear and adx_ok and 
+                 (was_overbought or rsi_cross_down) and ema_pullback_bear
 
 // Signaux combinés
 signal_long = breakout_long or pullback_long
@@ -128,7 +160,7 @@ plot(show_levels and not na(take_profit1) ? take_profit1 : na, "Take Profit 1",
 if show_stats_table and barstate.islast
     var table stats_table = table.new(position.top_right, 2, 8, bgcolor=color.white, border_width=1)
     table.cell(stats_table, 0, 0, "SignalPro", text_color=color.black, text_size=size.normal)
-    table.cell(stats_table, 1, 0, "v1.0.0-rc1", text_color=color.gray, text_size=size.small)
+    table.cell(stats_table, 1, 0, "v1.0.0-rc2", text_color=color.gray, text_size=size.small)
     table.cell(stats_table, 0, 1, "Régime", text_color=color.black)
     table.cell(stats_table, 1, 1, regime_bull ? "BULL" : regime_bear ? "BEAR" : "NEUTRAL", 
                text_color=regime_bull ? color.green : regime_bear ? color.red : color.gray)
@@ -153,8 +185,7 @@ alertcondition(signal_short, title="SIGNAL SHORT",
               message='{"v":"1.0.0","side":"SELL","symbol":"{{ticker}}","price":"{{close}}","timeframe":"{{interval}}","note":"SignalPro"}')
 
 // ============================================================================
-// VERSION : 1.0.0-rc1
-// STATUS : Squelette compilable avec plots de base et structure alertes
-// TODO : Logique signaux complète, backtest, gestion position avancée
-// REPO : https://github.com/Zelprog/SignalPro-TV
+// VERSION : 1.0.0-rc2
+// STATUS : Logique signaux améliorée - Breakout ATR filter + Pullback RSI cross
+// TODO : Gestion position avancée, backtest embarqué, validation tests
 // ============================================================================
