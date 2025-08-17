@@ -81,6 +81,16 @@
   - ✅ rc5_improvements.md : Documentation complète des améliorations anti-missed-trends
   - 📋 **TESTS EN COURS** : Validation capture uptrend historique + nouveaux signaux cyan/fuchsia
 
+- **2025-08-17 18:30** — State Machine + Momentum Optimization v1.0.0-rc6-fix (SOLUTION SIGNAUX SUCCESSIFS)
+  - 🚨 **FEEDBACK UTILISATEUR CRITIQUE** : "Beaucoup trop de signaux successifs, besoin alternance BUY→SELL"
+  - ✅ **State Machine implémentée** : Alternance forcée FLAT→LONG→SHORT→FLAT (anti-signaux successifs)
+  - ✅ **Momentum Optimization** : ROC≥2%, timing début/fin momentum, volume surge optionnel
+  - ✅ **Réduction signaux** : 70%+ attendu, exploitation vs détection, minimum 5 barres entre signaux
+  - ✅ **Interface optimisée** : Nouveau groupe "⚙️ Optimisation" + signaux VERTS (optimisés) vs GRIS (filtrés)
+  - ✅ **Documentation harmoniques** : harmonic_patterns.md pour exploration patterns Fibonacci futurs
+  - 🔧 **Compilation fix** : Ordre variables corrigé (rc6 → rc6-fix), 0 erreur compilation
+  - 📋 **TESTS EN COURS** : Validation alternance signaux + réduction volume + timing optimal
+
   - ✅ tests_plan.md : procédure validation BTCUSDT 15m/1h
   - 📋 **NEXT** : Tests compilation TradingView + logique signaux breakout/pullback
 
@@ -192,7 +202,7 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 - **Perte code** : GitHub backup, commits réguliers
 
 ## 9) TODO / Backlog
-**Priorité 1 (v1.0.0-rc5) :**
+**Priorité 1 (v1.0.0-rc6-fix) :**
 - ✅ Squelette indicator.pine compilable
 - ✅ Paramètres avec défauts sûrs
 - ✅ Plots de base (EMA200, EMA20, Supertrend)
@@ -201,9 +211,10 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 - ✅ Logique signaux raffinée (Breakout + Pullback)
 - ✅ Correction problème indicateurs figés
 - ✅ Early Trend Detection pour capture uptrends manquées
+- ✅ State Machine + Momentum Optimization anti-signaux successifs
 
 **Priorité 2 :**
-- [ ] Tests validation capture uptrend Mai-Juin 2025
+- [ ] Tests validation alternance BUY/SELL + réduction signaux
 - [ ] Trailing stop ATR dynamique
 - [ ] Backtest embarqué complet
 - [ ] Tests validation multi-timeframes
@@ -211,6 +222,7 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 **Priorité 3 :**
 - [ ] Table stats détaillée avec métriques
 - [ ] Documentation utilisateur finale
+- [ ] Exploration patterns harmoniques
 - [ ] Optimisation performance
 
 ## 10) Workflow Git intégré
@@ -235,7 +247,8 @@ indicator("SignalPro v1.0.0", shorttitle="SP", overlay=true)
 - **v1.0.0-rc1** → **v1.0.0-rc2** : Logique signaux améliorée
 - **v1.0.0-rc2** → **v1.0.0-rc3** : Correction problème indicateurs figés
 - **v1.0.0-rc3** → **v1.0.0-rc5** : Early Trend Detection anti-missed-trends
-- **v1.0.0-rc5** → **v1.0.0** : Backtest complet + tests validés
+- **v1.0.0-rc5** → **v1.0.0-rc6-fix** : State Machine + Momentum Optimization + compilation fix
+- **v1.0.0-rc6-fix** → **v1.0.0** : Backtest complet + tests validés
 - **v1.0.0** → **v1.1.0** : Position sizing + MTF filter
 - **v1.x.x** → **v2.0.0** : Automation Binance
 
@@ -261,5 +274,8 @@ SignalPro-TV/
 ├── tests_plan.md        # Plan de validation et tests
 ├── signal_improvements.md # Plan détaillé améliorations signaux
 ├── rc5_improvements.md   # Améliorations Early Trend Detection
+├── momentum_optimization.md # Solutions anti-signaux successifs
+├── harmonic_patterns.md  # Exploration patterns Fibonacci
+├── compilation_fix.md    # Documentation fix compilation rc6
 └── docs/                # Documentation additionnelle (future)
 ```
